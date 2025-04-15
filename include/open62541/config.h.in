@@ -212,14 +212,27 @@
 
 /* Intrinsic atomic operations are not available everywhere for MSVC.
  * Use the win32 API. Prevent duplicate definitions by via winsock2. */
-#if UA_MULTITHREADING >= 100 && defined(_WIN32)
-# ifndef _WINSOCKAPI_
-#  define _NO_WINSOCKAPI_
-# endif
-# define _WINSOCKAPI_
-# include <windows.h>
-# ifdef _NO_WINSOCKAPI_
-#  undef _WINSOCKAPI_
+#if UA_MULTITHREADING >= 100
+# if defined(_WIN32)
+#  ifndef _WINSOCKAPI_
+#   define _NO_WINSOCKAPI_
+#  endif
+#  define _WINSOCKAPI_
+#  include <windows.h>
+#  ifdef _NO_WINSOCKAPI_
+#   undef _WINSOCKAPI_
+#  endif
+# elif defined(__has_include) && __has_include(<stdatomic.h>)
+#  define UA_HAVE_C11_ATOMICS
+#  ifdef __cplusplus
+#    include <atomic>
+#    define _Atomic(T) std::atomic<T>
+#    define atomic_uintptr_t std::atomic_uintptr_t
+#  else
+#    include <stdatomic.h>
+#  endif
+# elif !defined(HAVE_GCC_SYNC_BUILTINS)
+#  error Atomic operations not implemented
 # endif
 #endif
 
